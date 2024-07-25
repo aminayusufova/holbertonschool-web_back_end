@@ -3,7 +3,7 @@ import signUpUser from './4-user-promise';
 
 export default async function handleProfileSignup(firstName, lastName, fileName) {
   const userData = await signUpUser(firstName, lastName).then((data) => ({
-    status: 'fullfilled',
+    status: 'fulfilled',
     value: data,
   }));
 
