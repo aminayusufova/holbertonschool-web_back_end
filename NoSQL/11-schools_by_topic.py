@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-Script changes all topics of school document based on the name
+Script lists all documents in collection
 """
 
 
-def update_topics(mongo_collection, name, topics):
+def schools_by_topic(mongo_collection, topic):
     """
-    Update a document in Python
+    List all documents in Python
     """
     if mongo_collection is None:
-        return None
-    return mongo_collection.update_many({"name": name}, {"$set": {"topics": topics}}).modified_count
+        return []
+    return mongo_collection.find({"topics": topic})
