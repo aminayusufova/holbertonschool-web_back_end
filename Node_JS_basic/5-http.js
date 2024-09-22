@@ -9,12 +9,22 @@ const app = http.createServer(async (req, res) => {
       res.end('Hello Holberton School!');
     } else if (req.url === '/students') {
       const db = process.argv[2];
+
       if (db) {
         const database = db.split('.', 2);
+
         if (database[1] === 'csv') {
           try {
             const data = await fs.readFile(db, 'utf8');
             const lines = data.split('\n').filter((line) => line.trim() !== '');
+
+            if (lines.length <= 1) {
+              res.statusCode = 200;
+              res.setHeader('Content-Type', 'text/plain');
+              res.end('This is the list of our students\nNumber of students: 0');
+              return;
+            }
+
             const fieldCounters = {};
 
             lines.slice(1).forEach((line) => {
@@ -43,11 +53,11 @@ const app = http.createServer(async (req, res) => {
             res.end();
           } catch (error) {
             res.statusCode = 500;
-            res.end('Internal Server Error');
+            res.end('Internal Server Error: Cannot read the database file');
           }
         } else {
           res.statusCode = 400;
-          res.end('Bad Request: Invalid file format');
+          res.end('Bad Request: Invalid file format. Expected a .csv file');
         }
       } else {
         res.statusCode = 400;
@@ -63,6 +73,8 @@ const app = http.createServer(async (req, res) => {
   }
 });
 
-app.listen(1245);
+app.listen(1245, () => {
+  console.log('Server running on port 1245');
+});
 
 module.exports = app;
