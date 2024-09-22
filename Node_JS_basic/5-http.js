@@ -1,50 +1,68 @@
 const http = require('http');
-const { exec } = require('child_process');
-const url = require('url');
+const fs = require('fs').promises;
 
-function runCountStudents() {
-  const countStudents = require('./3-read_file_async');
-  const path = process.argv[2];
+const app = http.createServer(async (req, res) => {
+  if (req.method === 'GET') {
+    if (req.url === '/') {
+      res.setHeader('Content-Type', 'text/plain');
+      res.statusCode = 200;
+      res.end('Hello Holberton School!');
+    } else if (req.url === '/students') {
+      const db = process.argv[2];
+      if (db) {
+        const database = db.split('.', 2);
+        if (database[1] === 'csv') {
+          try {
+            const data = await fs.readFile(db, 'utf8');
+            const lines = data.split('\n').filter((line) => line.trim() !== '');
+            const fieldCounters = {};
 
-  countStudents(path)
-    .then(() => {
-    })
-    .catch((error) => {
-      console.error(error.message);
-    });
-}
+            lines.slice(1).forEach((line) => {
+              const fields = line.split(',');
+              if (fields.length >= 4) {
+                const field = fields[3].trim();
 
-const app = http.createServer((req, res) => {
-  const parsedUrl = url.parse(req.url, true);
+                if (!fieldCounters[field]) {
+                  fieldCounters[field] = [];
+                }
+                fieldCounters[field].push(fields[0].trim());
+              }
+            });
 
-  if (parsedUrl.pathname === '/') {
-    res.statusCode = 200;
-    res.setHeader('Content-Type', 'text/plain');
-    res.end('Hello Holberton School!');
-  } else if (parsedUrl.pathname === '/students') {
-    res.statusCode = 200;
-    res.setHeader('Content-Type', 'text/plain');
-    res.write('This is the list of our students\n');
+            res.setHeader('Content-Type', 'text/plain');
+            res.statusCode = 200;
 
-    const databasePath = process.argv[2];
+            res.write('This is the list of our students\n');
+            res.write(`Number of students: ${lines.length - 1}`);
 
-    exec(, (error, stdout, stderr) => {
-      if (error) {
-        res.write(`Error: ${stderr}`);
+            for (const field in fieldCounters) {
+              if (Object.prototype.hasOwnProperty.call(fieldCounters, field)) {
+                res.write(`\nNumber of students in ${field}: ${fieldCounters[field].length}. List: ${fieldCounters[field].join(', ')}`);
+              }
+            }
+            res.end();
+          } catch (error) {
+            res.statusCode = 500;
+            res.end('Internal Server Error');
+          }
+        } else {
+          res.statusCode = 400;
+          res.end('Bad Request: Invalid file format');
+        }
       } else {
-        res.write(stdout);
+        res.statusCode = 400;
+        res.end('Bad Request: Missing database argument');
       }
-      res.end();
-    });
+    } else {
+      res.statusCode = 404;
+      res.end('Not Found');
+    }
   } else {
-    res.statusCode = 404;
-    res.setHeader('Content-Type', 'text/plain');
-    res.end('Not Found');
+    res.statusCode = 405;
+    res.end('Method Not Allowed');
   }
 });
 
-app.listen(1245, () => {
-  console.log('Server is listening on port 1245');
-});
+app.listen(1245);
 
 module.exports = app;
